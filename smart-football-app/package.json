@@ -1,0 +1,31 @@
+{
+  "name": "smart-football-app",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "expo": "~55.0.6",
+    "expo-status-bar": "~55.0.4",
+    "prop-types": "^15.8.1",
+    "react": "19.2.0",
+    "react-native": "0.83.2",
+    "react-native-bluetooth-classic": "^1.73.0-rc.17",
+    "react-native-paper": "^5.15.0",
+    "react-native-safe-area-context": "~5.6.2"
+  },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "react-native-bluetooth-classic"
+        ]
+      }
+    }
+  },
+  "private": true
+}
