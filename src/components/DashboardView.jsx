@@ -28,10 +28,11 @@ const studentPlanShape = PropTypes.shape({
 
 function TeamRosterPanel({ studentAnalytics, selectedPlayerName, setSelectedPlayerName }) {
   const selectedPlayer = studentAnalytics.find((student) => student.name === selectedPlayerName) || null
+  const registeredPlayersCount = studentAnalytics.length
 
   return (
     <div className="team-roster-panel">
-      <h3>Team Players</h3>
+      <h3>Team Players ({registeredPlayersCount})</h3>
       {studentAnalytics.length > 0 ? (
         <ul className="team-roster-list">
           {studentAnalytics.map((student) => (
@@ -87,6 +88,8 @@ TeamRosterPanel.propTypes = {
 
 function CoachDashboardSection({
   showTeamPlayers,
+  showTodaySessionsPanel,
+  showPendingReviewsPanel,
   studentAnalytics,
   selectedPlayerName,
   setSelectedPlayerName,
@@ -111,128 +114,132 @@ function CoachDashboardSection({
         />
       ) : null}
 
-      <div className="today-sessions-panel card analytics-card">
-        <h3>Today Sessions</h3>
+      {showTodaySessionsPanel ? (
+        <div className="today-sessions-panel card analytics-card">
+          <h3>Today Sessions</h3>
 
-        {todaySessions.length > 0 ? (
-          <ul className="today-sessions-list">
-            {todaySessions.map((session) => (
-              <li key={session.id}>
-                <strong>{session.title}</strong>
-                <span>{new Date(session.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                <span>{session.focusArea || 'General Training'}</span>
-                <span>{session.location || 'Main Ground'}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>No sessions scheduled for today.</p>
-        )}
-
-        <form className="coach-session-form" onSubmit={onCreateSession}>
-          <label>
-            <span>Session Title</span>
-            <input
-              type="text"
-              value={sessionForm.title}
-              onChange={(event) => updateSessionForm('title', event.target.value)}
-              placeholder="e.g. Ball Control Drills"
-            />
-          </label>
-          <label>
-            <span>Time (Today)</span>
-            <input
-              type="time"
-              value={sessionForm.time}
-              onChange={(event) => updateSessionForm('time', event.target.value)}
-            />
-          </label>
-          <label>
-            <span>Focus Area</span>
-            <input
-              type="text"
-              value={sessionForm.focusArea}
-              onChange={(event) => updateSessionForm('focusArea', event.target.value)}
-              placeholder="e.g. Passing"
-            />
-          </label>
-          <label>
-            <span>Location</span>
-            <input
-              type="text"
-              value={sessionForm.location}
-              onChange={(event) => updateSessionForm('location', event.target.value)}
-              placeholder="e.g. Ground A"
-            />
-          </label>
-
-          <button type="submit" className="primary-button">
-            Create Session
-          </button>
-        </form>
-      </div>
-
-      <div className="pending-reviews-panel card analytics-card">
-        <h3>Pending Reviews</h3>
-        {pendingReviews.length > 0 ? (
-          <ul className="pending-reviews-list">
-            {pendingReviews.map((review) => (
-              <li key={review.studentEmail}>
-                <strong>{review.studentName}</strong>
-                <span>{review.studentEmail}</span>
-                <span>
-                  {review.lastReviewedAt
-                    ? `Last reviewed: ${new Date(review.lastReviewedAt).toLocaleString()}`
-                    : 'Not reviewed yet'}
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>No pending students for review today.</p>
-        )}
-
-        <form className="coach-session-form" onSubmit={onCreateReview}>
-          <label>
-            <span>Student</span>
-            <select
-              value={reviewForm.studentEmail}
-              onChange={(event) => updateReviewForm('studentEmail', event.target.value)}
-            >
-              <option value="">Select student</option>
-              {pendingReviews.map((review) => (
-                <option key={review.studentEmail} value={review.studentEmail}>
-                  {review.studentName}
-                </option>
+          {todaySessions.length > 0 ? (
+            <ul className="today-sessions-list">
+              {todaySessions.map((session) => (
+                <li key={session.id}>
+                  <strong>{session.title}</strong>
+                  <span>{new Date(session.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  <span>{session.focusArea || 'General Training'}</span>
+                  <span>{session.location || 'Main Ground'}</span>
+                </li>
               ))}
-            </select>
-          </label>
-          <label>
-            <span>Rating (1-10)</span>
-            <input
-              type="number"
-              min="1"
-              max="10"
-              value={reviewForm.rating}
-              onChange={(event) => updateReviewForm('rating', event.target.value)}
-              placeholder="e.g. 8"
-            />
-          </label>
-          <label>
-            <span>Review Notes</span>
-            <input
-              type="text"
-              value={reviewForm.notes}
-              onChange={(event) => updateReviewForm('notes', event.target.value)}
-              placeholder="e.g. Good progress in passing drills"
-            />
-          </label>
+            </ul>
+          ) : (
+            <p>No sessions scheduled for today.</p>
+          )}
 
-          <button type="submit" className="primary-button">
-            Save Review
-          </button>
-        </form>
-      </div>
+          <form className="coach-session-form" onSubmit={onCreateSession}>
+            <label>
+              <span>Session Title</span>
+              <input
+                type="text"
+                value={sessionForm.title}
+                onChange={(event) => updateSessionForm('title', event.target.value)}
+                placeholder="e.g. Ball Control Drills"
+              />
+            </label>
+            <label>
+              <span>Time (Today)</span>
+              <input
+                type="time"
+                value={sessionForm.time}
+                onChange={(event) => updateSessionForm('time', event.target.value)}
+              />
+            </label>
+            <label>
+              <span>Focus Area</span>
+              <input
+                type="text"
+                value={sessionForm.focusArea}
+                onChange={(event) => updateSessionForm('focusArea', event.target.value)}
+                placeholder="e.g. Passing"
+              />
+            </label>
+            <label>
+              <span>Location</span>
+              <input
+                type="text"
+                value={sessionForm.location}
+                onChange={(event) => updateSessionForm('location', event.target.value)}
+                placeholder="e.g. Ground A"
+              />
+            </label>
+
+            <button type="submit" className="primary-button">
+              Create Session
+            </button>
+          </form>
+        </div>
+      ) : null}
+
+      {showPendingReviewsPanel ? (
+        <div className="pending-reviews-panel card analytics-card">
+          <h3>Pending Reviews</h3>
+          {pendingReviews.length > 0 ? (
+            <ul className="pending-reviews-list">
+              {pendingReviews.map((review) => (
+                <li key={review.studentEmail}>
+                  <strong>{review.studentName}</strong>
+                  <span>{review.studentEmail}</span>
+                  <span>
+                    {review.lastReviewedAt
+                      ? `Last reviewed: ${new Date(review.lastReviewedAt).toLocaleString()}`
+                      : 'Not reviewed yet'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>No pending students for review today.</p>
+          )}
+
+          <form className="coach-session-form" onSubmit={onCreateReview}>
+            <label>
+              <span>Student</span>
+              <select
+                value={reviewForm.studentEmail}
+                onChange={(event) => updateReviewForm('studentEmail', event.target.value)}
+              >
+                <option value="">Select student</option>
+                {pendingReviews.map((review) => (
+                  <option key={review.studentEmail} value={review.studentEmail}>
+                    {review.studentName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Rating (1-10)</span>
+              <input
+                type="number"
+                min="1"
+                max="10"
+                value={reviewForm.rating}
+                onChange={(event) => updateReviewForm('rating', event.target.value)}
+                placeholder="e.g. 8"
+              />
+            </label>
+            <label>
+              <span>Review Notes</span>
+              <input
+                type="text"
+                value={reviewForm.notes}
+                onChange={(event) => updateReviewForm('notes', event.target.value)}
+                placeholder="e.g. Good progress in passing drills"
+              />
+            </label>
+
+            <button type="submit" className="primary-button">
+              Save Review
+            </button>
+          </form>
+        </div>
+      ) : null}
 
       <h3>Student Analytics</h3>
       <div className="analytics-filter" role="tablist" aria-label="Analytics range">
@@ -262,6 +269,8 @@ function CoachDashboardSection({
 
 CoachDashboardSection.propTypes = {
   showTeamPlayers: PropTypes.bool.isRequired,
+  showTodaySessionsPanel: PropTypes.bool.isRequired,
+  showPendingReviewsPanel: PropTypes.bool.isRequired,
   studentAnalytics: PropTypes.arrayOf(studentAnalyticsShape).isRequired,
   selectedPlayerName: PropTypes.string.isRequired,
   setSelectedPlayerName: PropTypes.func.isRequired,
@@ -429,6 +438,8 @@ export default function DashboardView({
   onCreateReview,
 }) {
   const [showTeamPlayers, setShowTeamPlayers] = useState(false)
+  const [showTodaySessionsPanel, setShowTodaySessionsPanel] = useState(false)
+  const [showPendingReviewsPanel, setShowPendingReviewsPanel] = useState(false)
   const [selectedPlayerName, setSelectedPlayerName] = useState('')
 
   const toggleTeamOverview = () => {
@@ -442,6 +453,14 @@ export default function DashboardView({
       }
       return nextValue
     })
+  }
+
+  const toggleTodaySessions = () => {
+    setShowTodaySessionsPanel((current) => !current)
+  }
+
+  const togglePendingReviews = () => {
+    setShowPendingReviewsPanel((current) => !current)
   }
 
   return (
@@ -471,8 +490,23 @@ export default function DashboardView({
             <DashboardStatCard
               key={card.title}
               card={card}
-              onClick={sessionUser.role === 'coach' && card.title === 'Team Overview' ? toggleTeamOverview : undefined}
-              isActive={sessionUser.role === 'coach' && card.title === 'Team Overview' && showTeamPlayers}
+              onClick={
+                sessionUser.role !== 'coach'
+                  ? undefined
+                  : card.title === 'Team Overview'
+                    ? toggleTeamOverview
+                    : card.title === 'Today Sessions'
+                      ? toggleTodaySessions
+                      : card.title === 'Pending Reviews'
+                        ? togglePendingReviews
+                        : undefined
+              }
+              isActive={
+                sessionUser.role === 'coach' &&
+                ((card.title === 'Team Overview' && showTeamPlayers) ||
+                  (card.title === 'Today Sessions' && showTodaySessionsPanel) ||
+                  (card.title === 'Pending Reviews' && showPendingReviewsPanel))
+              }
             />
           ))}
         </div>
@@ -480,6 +514,8 @@ export default function DashboardView({
         {sessionUser.role === 'coach' ? (
           <CoachDashboardSection
             showTeamPlayers={showTeamPlayers}
+            showTodaySessionsPanel={showTodaySessionsPanel}
+            showPendingReviewsPanel={showPendingReviewsPanel}
             studentAnalytics={studentAnalytics}
             selectedPlayerName={selectedPlayerName}
             setSelectedPlayerName={setSelectedPlayerName}

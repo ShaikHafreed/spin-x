@@ -83,12 +83,19 @@ function App() {
   })
 
   const dashboardCards = useMemo(
-    () =>
-      getDashboardCards(sessionUser, {
+    () => {
+      const teamPlayersCount =
+        sessionUser?.role === 'coach'
+          ? users.filter((user) => user.role === 'student' && user.preferredCoachEmail === sessionUser.email).length
+          : 0
+
+      return getDashboardCards(sessionUser, {
+        teamPlayersCount,
         todaySessionsCount: todaySessions.length,
         pendingReviewsCount: pendingReviews.length,
-      }),
-    [sessionUser, todaySessions.length, pendingReviews.length],
+      })
+    },
+    [sessionUser, users, todaySessions.length, pendingReviews.length],
   )
 
   const filteredKickHistory = useMemo(
@@ -105,6 +112,23 @@ function App() {
     () => buildStudentAnalytics(derivedStudentPlans, filteredKickHistory),
     [derivedStudentPlans, filteredKickHistory],
   )
+
+  const coachStudentAnalytics = useMemo(() => {
+    if (sessionUser?.role !== 'coach') {
+      return studentAnalytics
+    }
+
+    const registeredStudents = new Set(
+      users
+        .filter((user) => user.role === 'student' && user.preferredCoachEmail === sessionUser.email)
+        .map((user) => user.email),
+    )
+
+    return studentAnalytics.filter((student) => {
+      const matchingPlan = derivedStudentPlans.find((plan) => plan.name === student.name)
+      return matchingPlan ? registeredStudents.has(matchingPlan.email) : false
+    })
+  }, [sessionUser, users, studentAnalytics, derivedStudentPlans])
 
   const currentStudentPlan = useMemo(
     () => getCurrentStudentPlanData(sessionUser, derivedStudentPlans),
@@ -446,7 +470,7 @@ function App() {
         dashboardCards={dashboardCards}
         analyticsRange={analyticsRange}
         setAnalyticsRange={setAnalyticsRange}
-        studentAnalytics={studentAnalytics}
+        studentAnalytics={coachStudentAnalytics}
         currentStudentPlan={currentStudentPlan}
         handleKickLog={handleKickLog}
         kickForm={kickForm}

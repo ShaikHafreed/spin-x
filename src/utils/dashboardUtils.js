@@ -156,10 +156,15 @@ export function getDashboardCards(sessionUser, options = {}) {
   }
 
   if (sessionUser.role === 'coach') {
+    const teamPlayersCount = Number(options.teamPlayersCount || 0)
     const todaySessionsCount = Number(options.todaySessionsCount || 0)
     const pendingReviewsCount = Number(options.pendingReviewsCount || 0)
     return [
-      { title: 'Team Overview', value: '24 Players', note: '2 injured, 22 active' },
+      {
+        title: 'Team Overview',
+        value: `${teamPlayersCount} Players`,
+        note: teamPlayersCount > 0 ? 'Players registered under you' : 'No players assigned yet',
+      },
       {
         title: 'Today Sessions',
         value: `${todaySessionsCount} Scheduled`,
