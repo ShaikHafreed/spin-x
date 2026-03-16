@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import DashboardStatCard from './DashboardStatCard'
 import StudentAnalyticsCard from './StudentAnalyticsCard'
 import StudentKickCard from './StudentKickCard'
@@ -310,18 +310,104 @@ CoachDashboardSection.propTypes = {
 }
 
 function StudentDashboardSection({
+  sessionUser,
   currentStudentPlan,
   handleKickLog,
   kickForm,
   updateKickForm,
   currentStudentKicks,
+  onUpdateStudentProfile,
   availableCoaches,
   selectedCoachEmail,
   onSelectCoach,
 }) {
+  const [profileForm, setProfileForm] = useState({
+    name: sessionUser.name || '',
+    age: sessionUser.age === null || sessionUser.age === undefined ? '' : String(sessionUser.age),
+    email: sessionUser.email || '',
+    profilePictureUrl: sessionUser.profilePictureUrl || '',
+  })
+
+  useEffect(() => {
+    setProfileForm({
+      name: sessionUser.name || '',
+      age: sessionUser.age === null || sessionUser.age === undefined ? '' : String(sessionUser.age),
+      email: sessionUser.email || '',
+      profilePictureUrl: sessionUser.profilePictureUrl || '',
+    })
+  }, [sessionUser])
+
+  const updateProfileForm = (field, value) => {
+    setProfileForm((current) => ({ ...current, [field]: value }))
+  }
+
+  const handleProfileSubmit = (event) => {
+    event.preventDefault()
+    onUpdateStudentProfile({
+      name: profileForm.name,
+      age: profileForm.age,
+      email: profileForm.email,
+      profilePictureUrl: profileForm.profilePictureUrl,
+    })
+  }
+
   return (
     <section className="analytics-panel">
       {currentStudentPlan ? <StudentSeasonPlanCard studentPlan={currentStudentPlan} /> : null}
+
+      <article className="card analytics-card student-profile-card">
+        <h4>My Profile</h4>
+        {profileForm.profilePictureUrl ? (
+          <img className="student-profile-preview" src={profileForm.profilePictureUrl} alt="Student profile" />
+        ) : (
+          <div className="student-profile-placeholder">No profile picture</div>
+        )}
+
+        <form className="coach-session-form" onSubmit={handleProfileSubmit}>
+          <label>
+            <span>Name</span>
+            <input
+              type="text"
+              value={profileForm.name}
+              onChange={(event) => updateProfileForm('name', event.target.value)}
+              placeholder="Your name"
+            />
+          </label>
+          <label>
+            <span>Age</span>
+            <input
+              type="number"
+              min="5"
+              max="100"
+              value={profileForm.age}
+              onChange={(event) => updateProfileForm('age', event.target.value)}
+              placeholder="Your age"
+            />
+          </label>
+          <label>
+            <span>Email</span>
+            <input
+              type="email"
+              value={profileForm.email}
+              onChange={(event) => updateProfileForm('email', event.target.value)}
+              placeholder="Your email"
+            />
+          </label>
+          <label>
+            <span>Profile Picture URL</span>
+            <input
+              type="url"
+              value={profileForm.profilePictureUrl}
+              onChange={(event) => updateProfileForm('profilePictureUrl', event.target.value)}
+              placeholder="https://example.com/photo.jpg"
+            />
+          </label>
+
+          <button type="submit" className="primary-button">
+            Save Profile
+          </button>
+        </form>
+      </article>
 
       <article className="card analytics-card coach-selection-card">
         <h4>Choose Your Coach</h4>
@@ -383,6 +469,12 @@ function StudentDashboardSection({
 }
 
 StudentDashboardSection.propTypes = {
+  sessionUser: PropTypes.shape({
+    name: PropTypes.string.isRequired,
+    email: PropTypes.string.isRequired,
+    age: PropTypes.number,
+    profilePictureUrl: PropTypes.string,
+  }).isRequired,
   currentStudentPlan: studentPlanShape,
   handleKickLog: PropTypes.func.isRequired,
   kickForm: PropTypes.shape({
@@ -402,6 +494,7 @@ StudentDashboardSection.propTypes = {
       score: PropTypes.number.isRequired,
     }),
   ).isRequired,
+  onUpdateStudentProfile: PropTypes.func.isRequired,
   availableCoaches: PropTypes.arrayOf(
     PropTypes.shape({
       name: PropTypes.string.isRequired,
@@ -425,6 +518,7 @@ export default function DashboardView({
   kickForm,
   updateKickForm,
   currentStudentKicks,
+  onUpdateStudentProfile,
   availableCoaches,
   selectedCoachEmail,
   onSelectCoach,
@@ -463,6 +557,21 @@ export default function DashboardView({
     setShowPendingReviewsPanel((current) => !current)
   }
 
+  const getCardClickHandler = (cardTitle) => {
+    if (sessionUser.role === 'coach') {
+      if (cardTitle === 'Team Overview') {
+        return toggleTeamOverview
+      }
+      if (cardTitle === 'Today Sessions') {
+        return toggleTodaySessions
+      }
+      if (cardTitle === 'Pending Reviews') {
+        return togglePendingReviews
+      }
+    }
+    return undefined
+  }
+
   return (
     <main className="app-shell">
       <header className="dashboard-header">
@@ -490,17 +599,7 @@ export default function DashboardView({
             <DashboardStatCard
               key={card.title}
               card={card}
-              onClick={
-                sessionUser.role !== 'coach'
-                  ? undefined
-                  : card.title === 'Team Overview'
-                    ? toggleTeamOverview
-                    : card.title === 'Today Sessions'
-                      ? toggleTodaySessions
-                      : card.title === 'Pending Reviews'
-                        ? togglePendingReviews
-                        : undefined
-              }
+              onClick={getCardClickHandler(card.title)}
               isActive={
                 sessionUser.role === 'coach' &&
                 ((card.title === 'Team Overview' && showTeamPlayers) ||
@@ -532,11 +631,13 @@ export default function DashboardView({
           />
         ) : (
           <StudentDashboardSection
+            sessionUser={sessionUser}
             currentStudentPlan={currentStudentPlan}
             handleKickLog={handleKickLog}
             kickForm={kickForm}
             updateKickForm={updateKickForm}
             currentStudentKicks={currentStudentKicks}
+            onUpdateStudentProfile={onUpdateStudentProfile}
             availableCoaches={availableCoaches}
             selectedCoachEmail={selectedCoachEmail}
             onSelectCoach={onSelectCoach}
@@ -550,6 +651,9 @@ export default function DashboardView({
 DashboardView.propTypes = {
   sessionUser: PropTypes.shape({
     name: PropTypes.string.isRequired,
+    email: PropTypes.string.isRequired,
+    age: PropTypes.number,
+    profilePictureUrl: PropTypes.string,
     role: PropTypes.oneOf(['coach', 'student']).isRequired,
   }).isRequired,
   logout: PropTypes.func.isRequired,
@@ -582,6 +686,7 @@ DashboardView.propTypes = {
       score: PropTypes.number.isRequired,
     }),
   ).isRequired,
+  onUpdateStudentProfile: PropTypes.func.isRequired,
   availableCoaches: PropTypes.arrayOf(
     PropTypes.shape({
       name: PropTypes.string.isRequired,

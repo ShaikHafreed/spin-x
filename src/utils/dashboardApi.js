@@ -79,6 +79,14 @@ export function updateStudentCoachPreference(studentEmail, coachEmail, token) {
   })
 }
 
+export function updateStudentProfile(payload, token) {
+  return request('/students/profile', {
+    method: 'PUT',
+    headers: getAuthHeaders(token),
+    body: JSON.stringify(payload),
+  })
+}
+
 export function fetchCoachTodaySessions(token) {
   return request('/sessions/today', {
     method: 'GET',

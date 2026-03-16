@@ -429,6 +429,33 @@ h2 {
   margin-bottom: 14px;
 }
 
+.student-profile-card {
+  margin-bottom: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.student-profile-preview {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border);
+}
+
+.student-profile-placeholder {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  border: 2px dashed var(--border);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  color: var(--text-h);
+  text-align: center;
+  padding: 6px;
+}
+
 .coach-select-label {
   display: block;
   margin-bottom: 6px;

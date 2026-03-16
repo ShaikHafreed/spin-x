@@ -82,6 +82,8 @@ function toClientUser(row) {
     name: row.name,
     email: row.email,
     role: row.role,
+    age: row.age ?? null,
+    profilePictureUrl: row.profile_picture_url || '',
     preferredCoachEmail: row.preferred_coach_email || '',
   }
 }
@@ -181,7 +183,7 @@ app.get('/api/health', async (_, res) => {
 
 app.get('/api/users', async (_, res) => {
   const [rows] = await pool.query(
-    'SELECT id, name, email, role, preferred_coach_email FROM users ORDER BY id ASC',
+    'SELECT id, name, email, role, age, profile_picture_url, preferred_coach_email FROM users ORDER BY id ASC',
   )
   res.json(rows.map(toClientUser))
 })
@@ -274,7 +276,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   const [rows] = await pool.query(
-    'SELECT id, name, email, role, password, preferred_coach_email FROM users WHERE email = ? LIMIT 1',
+    'SELECT id, name, email, role, age, profile_picture_url, password, preferred_coach_email FROM users WHERE email = ? LIMIT 1',
     [normalizedEmail],
   )
 
@@ -437,7 +439,7 @@ app.put('/api/students/:studentEmail/coach', requireAuth, async (req, res) => {
     await pool.query('UPDATE users SET preferred_coach_email = NULL WHERE email = ? AND role = ?', [studentEmail, 'student'])
 
     const [studentRows] = await pool.query(
-      'SELECT id, name, email, role, preferred_coach_email FROM users WHERE email = ? AND role = ? LIMIT 1',
+      'SELECT id, name, email, role, age, profile_picture_url, preferred_coach_email FROM users WHERE email = ? AND role = ? LIMIT 1',
       [studentEmail, 'student'],
     )
 
@@ -460,11 +462,100 @@ app.put('/api/students/:studentEmail/coach', requireAuth, async (req, res) => {
   ])
 
   const [studentRows] = await pool.query(
-    'SELECT id, name, email, role, preferred_coach_email FROM users WHERE email = ? AND role = ? LIMIT 1',
+    'SELECT id, name, email, role, age, profile_picture_url, preferred_coach_email FROM users WHERE email = ? AND role = ? LIMIT 1',
     [studentEmail, 'student'],
   )
 
   return res.json({ user: toClientUser(studentRows[0]) })
+})
+
+app.put('/api/students/profile', requireAuth, async (req, res) => {
+  if (req.auth.role !== 'student') {
+    return res.status(403).json({ error: 'Only students can update their profile.' })
+  }
+
+  const { name, email, age, profilePictureUrl } = req.body || {}
+  const normalizedName = (name || '').trim()
+  const normalizedEmail = (email || '').trim().toLowerCase()
+  const normalizedProfilePictureUrl = (profilePictureUrl || '').trim()
+
+  if (!normalizedName || !normalizedEmail) {
+    return res.status(400).json({ error: 'Name and email are required.' })
+  }
+
+  const parsedAge = age === '' || age === null || age === undefined ? null : Number(age)
+  if (parsedAge !== null && (!Number.isInteger(parsedAge) || parsedAge < 5 || parsedAge > 100)) {
+    return res.status(400).json({ error: 'Age must be an integer between 5 and 100.' })
+  }
+
+  if (normalizedProfilePictureUrl && !/^https?:\/\//i.test(normalizedProfilePictureUrl)) {
+    return res.status(400).json({ error: 'Profile picture must be a valid URL starting with http:// or https://.' })
+  }
+
+  const connection = await pool.getConnection()
+  try {
+    await connection.beginTransaction()
+
+    const [currentRows] = await connection.query(
+      'SELECT id, name, email, role FROM users WHERE id = ? AND role = ? LIMIT 1',
+      [req.auth.sub, 'student'],
+    )
+
+    if (currentRows.length === 0) {
+      await connection.rollback()
+      return res.status(404).json({ error: 'Student account not found.' })
+    }
+
+    const currentUser = currentRows[0]
+    const currentEmail = currentUser.email
+
+    if (normalizedEmail !== currentEmail) {
+      const [existingRows] = await connection.query('SELECT id FROM users WHERE email = ? LIMIT 1', [normalizedEmail])
+      if (existingRows.length > 0) {
+        await connection.rollback()
+        return res.status(409).json({ error: 'An account with this email already exists.' })
+      }
+    }
+
+    await connection.query(
+      `UPDATE users
+       SET name = ?, email = ?, age = ?, profile_picture_url = ?
+       WHERE id = ?`,
+      [normalizedName, normalizedEmail, parsedAge, normalizedProfilePictureUrl || null, currentUser.id],
+    )
+
+    await connection.query(
+      'UPDATE student_plans SET student_email = ?, student_name = ? WHERE student_email = ?',
+      [normalizedEmail, normalizedName, currentEmail],
+    )
+
+    await connection.query(
+      'UPDATE kick_history SET student_email = ?, student_name = ? WHERE student_email = ?',
+      [normalizedEmail, normalizedName, currentEmail],
+    )
+
+    await connection.query(
+      'UPDATE coach_reviews SET student_email = ?, student_name = ? WHERE student_email = ?',
+      [normalizedEmail, normalizedName, currentEmail],
+    )
+
+    await connection.commit()
+
+    const [updatedRows] = await connection.query(
+      'SELECT id, name, email, role, age, profile_picture_url, preferred_coach_email FROM users WHERE id = ? LIMIT 1',
+      [currentUser.id],
+    )
+
+    const updatedUser = toClientUser(updatedRows[0])
+    const token = createToken(updatedUser)
+
+    return res.json({ user: updatedUser, token })
+  } catch (error) {
+    await connection.rollback()
+    throw error
+  } finally {
+    connection.release()
+  }
 })
 
 app.get('/api/sessions/today', requireAuth, async (req, res) => {

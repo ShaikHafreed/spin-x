@@ -76,6 +76,8 @@ export async function initializeDatabase() {
   `)
 
   await ensureColumnExists('users', 'preferred_coach_email', 'preferred_coach_email VARCHAR(180) NULL')
+  await ensureColumnExists('users', 'age', 'age INT NULL')
+  await ensureColumnExists('users', 'profile_picture_url', 'profile_picture_url VARCHAR(1024) NULL')
   await ensureIndexExists('users', 'idx_users_role', 'role')
   await ensureIndexExists('users', 'idx_users_preferred_coach_email', 'preferred_coach_email')
 

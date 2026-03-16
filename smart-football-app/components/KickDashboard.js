@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native'
 import { Chip, Text } from 'react-native-paper'
 import PropTypes from 'prop-types'
 import DataCard from './DataCard'
+import ForceTrajectoryCard from './ForceTrajectoryCard'
 import StudentDetails from './StudentDetails'
 
 export default function KickDashboard({ metrics, student }) {
@@ -20,6 +21,8 @@ export default function KickDashboard({ metrics, student }) {
       <DataCard label="Spin Magnitude" value={metrics.spinMagnitude.toFixed(1)} />
       <DataCard label="Performance Score" value={String(metrics.performanceScore)} unit="/100" />
       <DataCard label="Performance Band" value={metrics.performanceBand} />
+
+      <ForceTrajectoryCard metrics={metrics} />
 
       <View style={styles.statusRow}>
         <Text variant="titleMedium">Status</Text>

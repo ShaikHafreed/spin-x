@@ -26,6 +26,7 @@ import {
   loginUser,
   signupUser,
   updateStudentCoachPreference,
+  updateStudentProfile,
 } from './utils/dashboardApi'
 import './App.css'
 
@@ -451,6 +452,28 @@ function App() {
     }
   }
 
+  const handleUpdateStudentProfile = async (profileData) => {
+    clearMessages()
+
+    if (sessionUser?.role !== 'student') {
+      return
+    }
+
+    try {
+      const result = await updateStudentProfile(profileData, authToken)
+      const updatedUser = result.user
+      const refreshedToken = result.token || authToken
+
+      setUsers((current) => current.map((user) => (user.id === updatedUser.id ? updatedUser : user)))
+      setSessionUser(updatedUser)
+      setAuthToken(refreshedToken)
+      saveSession(updatedUser, refreshedToken)
+      setSuccess('Profile updated successfully.')
+    } catch (profileError) {
+      setError(profileError.message || 'Failed to update profile.')
+    }
+  }
+
   if (isLoading) {
     return (
       <main className="app-shell">
@@ -476,6 +499,7 @@ function App() {
         kickForm={kickForm}
         updateKickForm={updateKickForm}
         currentStudentKicks={currentStudentKicks}
+        onUpdateStudentProfile={handleUpdateStudentProfile}
         availableCoaches={availableCoaches}
         selectedCoachEmail={sessionUser.preferredCoachEmail || ''}
         onSelectCoach={handleCoachSelection}
