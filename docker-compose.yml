@@ -41,6 +41,7 @@ services:
   web:
     build:
       context: .
+      dockerfile: Dockerfile.nginx
     depends_on:
       - api
     ports:
